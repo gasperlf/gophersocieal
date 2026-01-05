@@ -24,3 +24,6 @@ migrate -path=./cmd/migrate/migrations -database="postgres://admin:pass@localhos
 make migration [posts_create]
 
 ```
+
+Validation Library::
+github.com/go-playground/validator/v10
