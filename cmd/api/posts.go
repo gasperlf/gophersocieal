@@ -26,6 +26,11 @@ type UpdatePostPayload struct {
 	Tags    *[]string `json:"tags"`
 }
 
+type CreateCommentPayload struct {
+	Content string `json:"content" validate:"required,max=500"`
+	UserID  int64  `json:"user_id" validate:"required"`
+}
+
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request CreatePostPayload
@@ -139,6 +144,38 @@ func (app *application) UpdatePostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := app.jsonResponse(w, http.StatusOK, updatedPost); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) createCommentPostHandler(w http.ResponseWriter, r *http.Request) {
+
+	var request CreateCommentPayload
+	if err := readJSON(w, r, &request); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(request); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	post := getPostFromContext(r)
+	comment := &store.Comment{
+		PostID:  post.ID,
+		Content: request.Content,
+		UserID:  request.UserID,
+	}
+
+	ctx := r.Context()
+	if err := app.store.Comments.Create(ctx, comment); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusCreated, comment); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
