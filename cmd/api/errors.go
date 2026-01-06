@@ -19,3 +19,8 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request,
 	log.Printf("not found error: %s path: %s error: %s", r.Method, r.URL.Path, err)
 	errorResponse(w, http.StatusNotFound, err.Error())
 }
+
+func (app *application) notContent(w http.ResponseWriter, r *http.Request) {
+	log.Printf("not found error: %s path: %s", r.Method, r.URL.Path)
+	noContentResponse(w, http.StatusNoContent)
+}

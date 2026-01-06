@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"log"
 )
 
 type Comment struct {
@@ -54,4 +55,25 @@ func (s *CommentStore) GetByPostID(ctx context.Context, id int64) ([]Comment, er
 		return nil, err
 	}
 	return comments, nil
+}
+
+func (s *CommentStore) DeleteByPostID(ctx context.Context, postID int64) error {
+	query := `DELETE FROM comments WHERE post_id = $1`
+
+	result, err := s.db.ExecContext(ctx, query, postID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		log.Println("0 comments rows affected")
+		return nil
+	}
+
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/lib/pq"
@@ -62,6 +63,52 @@ func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 		default:
 			return nil, err
 		}
+	}
+
+	return post, nil
+}
+
+func (s *PostStore) Delete(ctx context.Context, postID int64) error {
+	query := `DELETE FROM posts WHERE id = $1`
+
+	result, err := s.db.ExecContext(ctx, query, postID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		log.Println("0 posts rows affected")
+		return nil
+	}
+
+	return nil
+}
+
+func (s *PostStore) Update(ctx context.Context, post *Post) (*Post, error) {
+	query := `UPDATE posts
+			SET title = $1, content = $2, tags = $3, updated_at = NOW()
+			WHERE id = $4
+			RETURNING  content, title, tags, updated_at`
+
+	err := s.db.QueryRowContext(ctx, query,
+		post.Title,
+		post.Content,
+		pq.Array(post.Tags),
+		post.ID,
+	).Scan(
+		&post.Content,
+		&post.Title,
+		pq.Array(&post.Tags),
+		&post.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return post, nil
