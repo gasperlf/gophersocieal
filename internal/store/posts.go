@@ -18,6 +18,7 @@ type Post struct {
 	Tags      []string  `json:"tags"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	Version   int       `json:"version"`
 	Comments  []Comment `json:"comments"`
 }
 
@@ -28,7 +29,8 @@ type PostStore struct {
 func (s *PostStore) Create(ctx context.Context, post *Post) error {
 	query := `INSERT INTO posts (content, title, user_id, tags)
 			VALUES ($1, $2, $3, $4)	RETURNING id, created_at, updated_at`
-
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 	err := s.db.QueryRowContext(ctx, query, post.Content, post.Title, post.UserID, pq.Array(post.Tags)).
 		Scan(&post.ID, &post.CreatedAt, &post.UpdatedAt)
 
@@ -40,11 +42,12 @@ func (s *PostStore) Create(ctx context.Context, post *Post) error {
 }
 
 func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
-	query := `SELECT id, content, title, user_id, tags, created_at, updated_at
+	query := `SELECT id, content, title, user_id, tags, created_at, updated_at, version
 			FROM posts WHERE id = $1`
 
 	post := &Post{}
-
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 	err := s.db.QueryRowContext(ctx, query, id).
 		Scan(
 			&post.ID,
@@ -54,6 +57,7 @@ func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 			pq.Array(&post.Tags),
 			&post.CreatedAt,
 			&post.UpdatedAt,
+			&post.Version,
 		)
 
 	if err != nil {
@@ -70,6 +74,9 @@ func (s *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 
 func (s *PostStore) Delete(ctx context.Context, postID int64) error {
 	query := `DELETE FROM posts WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	result, err := s.db.ExecContext(ctx, query, postID)
 	if err != nil {
@@ -91,20 +98,25 @@ func (s *PostStore) Delete(ctx context.Context, postID int64) error {
 
 func (s *PostStore) Update(ctx context.Context, post *Post) (*Post, error) {
 	query := `UPDATE posts
-			SET title = $1, content = $2, tags = $3, updated_at = NOW()
-			WHERE id = $4
-			RETURNING  content, title, tags, updated_at`
+			SET title = $1, content = $2, tags = $3, updated_at = NOW(), version = version + 1
+			WHERE id = $4 and version = $5
+			RETURNING  content, title, tags, updated_at, version`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 
 	err := s.db.QueryRowContext(ctx, query,
 		post.Title,
 		post.Content,
 		pq.Array(post.Tags),
 		post.ID,
+		post.Version,
 	).Scan(
 		&post.Content,
 		&post.Title,
 		pq.Array(&post.Tags),
 		&post.UpdatedAt,
+		&post.Version,
 	)
 
 	if err != nil {
