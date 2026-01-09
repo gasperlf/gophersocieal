@@ -31,6 +31,20 @@ type CreateCommentPayload struct {
 	UserID  int64  `json:"user_id" validate:"required"`
 }
 
+// CreatePost godoc
+//
+//	@Summary		Create a post
+//	@Description	Create a post
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		CreatePostPayload	true	"query params"
+//	@Success		200		{object}	store.Post
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts [post]
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request CreatePostPayload
@@ -65,6 +79,20 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// GetPost godoc
+//
+//	@Summary		Get a post
+//	@Description	Get a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			postID	path		int	true	"Post ID"
+//	@Success		200		{object}	store.Post
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts [get]
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	post := getPostFromContext(r)
@@ -82,6 +110,20 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeletePost godoc
+//
+//	@Summary		Delete a post
+//	@Description	Delete a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			postID	path		int	true	"Post ID"
+//	@Success		200		{string}	string
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts [delete]
 func (app *application) DeletePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	postIDParam := chi.URLParam(r, "postID")
@@ -116,6 +158,21 @@ func (app *application) DeletePostHandler(w http.ResponseWriter, r *http.Request
 
 }
 
+// UpdatePost godoc
+//
+//	@Summary		Update a post
+//	@Description	Update a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			postID	path		int					true	"Post ID"
+//	@Param			request	body		UpdatePostPayload	true	"query params"
+//	@Success		200		{object}	store.Post
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts [patch]
 func (app *application) UpdatePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request UpdatePostPayload
@@ -149,6 +206,21 @@ func (app *application) UpdatePostHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// CreatePost godoc
+//
+//	@Summary		Create a comments for a post
+//	@Description	Create a comments for a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			postID	path		int						true	"Post ID"
+//	@Param			request	body		CreateCommentPayload	true	"query params"
+//	@Success		200		{object}	store.Comment
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/postID/comments [post]
 func (app *application) createCommentPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request CreateCommentPayload

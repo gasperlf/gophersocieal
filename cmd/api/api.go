@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+	"ontopsolutions.net/gasperlf/social/docs"
 	"ontopsolutions.net/gasperlf/social/internal/store"
 )
 
@@ -16,9 +19,10 @@ type application struct {
 }
 
 type config struct {
-	addr string
-	db   dbConfig
-	env  string
+	addr   string
+	db     dbConfig
+	env    string
+	apiURL string
 }
 
 type dbConfig struct {
@@ -41,10 +45,11 @@ func mount(app *application) http.Handler {
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
-
-	r.Get("/health", app.healthCheckHandler)
+	docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
 
 	r.Route("/v1", func(r chi.Router) {
+		r.Get("/health", app.healthCheckHandler)
+		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
 			r.Route("/{postID}", func(r chi.Router) {
@@ -72,7 +77,10 @@ func mount(app *application) http.Handler {
 }
 
 func (app *application) run(mux http.Handler) error {
-
+	// Docs
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.BasePath = "/v1"
+	docs.SwaggerInfo.Host = app.config.apiURL
 	srvr := &http.Server{
 		Addr:         app.config.addr,
 		Handler:      mux,

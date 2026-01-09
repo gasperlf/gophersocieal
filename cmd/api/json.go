@@ -9,6 +9,11 @@ import (
 
 var Validate *validator.Validate
 
+type Envelope struct {
+	Data  any    `json:"data,omitempty"`
+	Error string `json:"error,omitempty"`
+}
+
 func init() {
 	Validate = validator.New(validator.WithRequiredStructEnabled())
 }
@@ -36,11 +41,7 @@ func errorResponse(w http.ResponseWriter, status int, message string) error {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	type envelope struct {
-		Error string `json:"error"`
-	}
-
-	return writeJSON(w, status, &envelope{Error: message})
+	return writeJSON(w, status, &Envelope{Error: message})
 }
 
 func noContentResponse(w http.ResponseWriter, status int) error {
@@ -49,8 +50,6 @@ func noContentResponse(w http.ResponseWriter, status int) error {
 }
 
 func (app *application) jsonResponse(w http.ResponseWriter, status int, data any) error {
-	type envelope struct {
-		Data any `json:"data"`
-	}
-	return writeJSON(w, status, &envelope{Data: data})
+
+	return writeJSON(w, status, &Envelope{Data: data})
 }

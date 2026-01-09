@@ -27,3 +27,15 @@ make migration [posts_create]
 
 Validation Library::
 github.com/go-playground/validator/v10
+
+to run config for swagger
+
+https://github.com/swaggo/http-swagger?tab=readme-ov-file
+check env variables and export
+
+```bash
+swag -version
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc
+source ~/.zshrc
+
+```
