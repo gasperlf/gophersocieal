@@ -39,3 +39,9 @@ echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc
 source ~/.zshrc
 
 ```
+
+Logging Library::
+
+```bash
+https://github.com/uber-go/zap
+```
