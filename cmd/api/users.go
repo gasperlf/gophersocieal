@@ -134,6 +134,7 @@ func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) userContextMiddleware(next http.Handler) http.Handler {
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID, err := getParamAsInt(r, "userID")
 		if err != nil {
@@ -166,6 +167,37 @@ func (app *application) userContextMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// ActivateUser godoc
+//
+//	@Summary		Activate/Register a user
+//	@Description	Activate/Register a user by invitation token
+//	@Tags			users
+//	@Produce		json
+//	@Param			token	path		string	true	"User token invitation"
+//	@Success		200		{string}	string	"user unfollowed"
+//	@Failure		400		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/users/activate/{token} [put]
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	token := getParamAsString(r, "token")
+
+	ctx := r.Context()
+	err := app.store.Users.Activate(ctx, token)
+
+	if err != nil {
+		switch err {
+		case store.ErrorNotFound:
+			app.notFoundResponse(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+	if err := app.jsonResponse(w, http.StatusNoContent, ""); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}
+
 func getUserFromContext(r *http.Request) *store.User {
 	user, _ := r.Context().Value(contextKeyUser).(*store.User)
 	return user
@@ -177,4 +209,8 @@ func getParamAsInt(r *http.Request, param string) (int64, error) {
 		return 0, err
 	}
 	return id, nil
+}
+
+func getParamAsString(r *http.Request, param string) string {
+	return chi.URLParam(r, param)
 }

@@ -152,7 +152,7 @@ func (app *application) DeletePostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := app.jsonResponse(w, http.StatusNoContent, nil); err != nil {
-		app.notContent(w, r)
+		app.notContent(w)
 		return
 	}
 
