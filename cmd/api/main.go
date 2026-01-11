@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 	"ontopsolutions.net/gasperlf/social/internal/db"
 	"ontopsolutions.net/gasperlf/social/internal/env"
+	"ontopsolutions.net/gasperlf/social/internal/mailer"
 	"ontopsolutions.net/gasperlf/social/internal/store"
 )
 
@@ -42,8 +43,13 @@ func main() {
 		},
 		env: env.GetString("APP_ENV", "development"),
 		mail: mailConfig{
-			exp: time.Hour * 24 * 3, // 3 days
+			exp:       time.Hour * 24 * 3, // 3 days
+			fromEmail: env.GetString("FROM_EMAIL", ""),
+			sendGrid: sendGridConfig{
+				apiKey: env.GetString("SENDGRID_API_KEY", ""),
+			},
 		},
+		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
@@ -63,10 +69,13 @@ func main() {
 
 	store := store.NewStorage(db)
 
+	mailer := mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
+
 	app := &application{
 		config: cfg,
 		store:  store,
 		logger: logger,
+		mailer: mailer,
 	}
 
 	mux := mount(app)

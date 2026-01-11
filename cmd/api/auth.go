@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
 
+	"ontopsolutions.net/gasperlf/social/internal/mailer"
 	"ontopsolutions.net/gasperlf/social/internal/store"
 )
 
@@ -76,10 +78,30 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	//mail
 	userWithToken := UserWithToken{
 		User:  user,
 		Token: token,
+	}
+
+	activationURL := fmt.Sprintf("%s/confirm/%s", app.config.frontendURL, userWithToken.Token)
+	isProdEnv := app.config.env == "prod"
+	vars := struct {
+		Username      string
+		ActivationURL string
+	}{
+		Username:      user.Username,
+		ActivationURL: activationURL,
+	}
+	//send mail
+	err = app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, vars, !isProdEnv)
+	if err != nil {
+		app.logger.Errorw("error sending welcome email", "error", err.Error())
+		//rollback user creation if email fails
+		if err := app.store.Users.Delete(ctx, user.ID); err != nil {
+			app.logger.Errorw("Error deleting user", "error", err)
+		}
+		app.internalServerError(w, r, err)
+		return
 	}
 
 	if err := app.jsonResponse(w, http.StatusCreated, userWithToken); err != nil {
