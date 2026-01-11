@@ -45,3 +45,9 @@ Logging Library::
 ```bash
 https://github.com/uber-go/zap
 ```
+
+CORS:
+
+```bash
+go get github.com/go-chi/cors
+```

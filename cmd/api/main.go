@@ -33,8 +33,9 @@ const version = "0.0.1"
 func main() {
 
 	cfg := config{
-		addr:   env.GetString("API_ADDR", ":8081"),
-		apiURL: env.GetString("EXTERNAL_URL", "localhost:8081"),
+		addr:        env.GetString("API_ADDR", ":8081"),
+		apiURL:      env.GetString("EXTERNAL_URL", "localhost:8081"),
+		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 		db: dbConfig{
 			addr:         env.GetString("DB_ADDR", "postgres://admin:pass@localhost/social?sslmode=disable"),
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
@@ -48,8 +49,10 @@ func main() {
 			sendGrid: sendGridConfig{
 				apiKey: env.GetString("SENDGRID_API_KEY", ""),
 			},
+			mailTrap: mailTrapConfig{
+				apiKey: env.GetString("MAIL_API_KEY", ""),
+			},
 		},
-		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()

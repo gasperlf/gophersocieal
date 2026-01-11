@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.uber.org/zap"
 	"ontopsolutions.net/gasperlf/social/docs"
@@ -31,12 +32,17 @@ type config struct {
 }
 
 type mailConfig struct {
-	sendGrid  sendGridConfig
 	fromEmail string
 	exp       time.Duration
+	sendGrid  sendGridConfig
+	mailTrap  mailTrapConfig
 }
 
 type sendGridConfig struct {
+	apiKey string
+}
+
+type mailTrapConfig struct {
 	apiKey string
 }
 
@@ -50,6 +56,14 @@ type dbConfig struct {
 func mount(app *application) http.Handler {
 
 	r := chi.NewRouter()
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
