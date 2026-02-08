@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"ontopsolutions.net/gasperlf/social/internal/auth"
 	"ontopsolutions.net/gasperlf/social/internal/db"
 	"ontopsolutions.net/gasperlf/social/internal/env"
 	"ontopsolutions.net/gasperlf/social/internal/mailer"
@@ -53,6 +54,17 @@ func main() {
 				apiKey: env.GetString("MAIL_API_KEY", ""),
 			},
 		},
+		auth: authConfig{
+			basic: basicConfig{
+				user: "username",
+				pass: "password",
+			},
+			token: tokenConfig{
+				secret: env.GetString("AUTH_TOKEN_SECRET", "!·.00000999iiillllfr13434343"),
+				exp:    time.Hour * 24 * 3, //3 days
+				iss:    "gophersocial",
+			},
+		},
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
@@ -74,11 +86,14 @@ func main() {
 
 	mailer := mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 
+	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss)
+
 	app := &application{
-		config: cfg,
-		store:  store,
-		logger: logger,
-		mailer: mailer,
+		config:        cfg,
+		store:         store,
+		logger:        logger,
+		mailer:        mailer,
+		authenticator: jwtAuthenticator,
 	}
 
 	mux := mount(app)

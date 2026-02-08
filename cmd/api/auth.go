@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
 	"ontopsolutions.net/gasperlf/social/internal/mailer"
@@ -21,6 +23,11 @@ type RegisterUserPayload struct {
 type UserWithToken struct {
 	*store.User
 	Token string `json:"token"`
+}
+
+type CreateUserTokenPayload struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
 }
 
 // RegisterUser godoc
@@ -106,6 +113,70 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	app.logger.Infow("Email sent with status: ", status)
 
 	if err := app.jsonResponse(w, http.StatusCreated, userWithToken); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+// CreateToken godoc
+//
+//	@Summary		Create token
+//	@Description	Create token for a user
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		CreateUserTokenPayload	true	"User credentials"
+//	@Success		20o		{object}	string		"token"
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/authentication/token [post]
+func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+
+	//parse payload credentials
+	var request CreateUserTokenPayload
+
+	if err := readJSON(w, r, &request); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(request); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	// fetch user (check if users exists) from the payload
+	user, err := app.store.Users.GetByEmail(r.Context(), request.Email)
+	if err != nil {
+		switch err {
+		case store.ErrorNotFound:
+			app.internalServerError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	//compare password
+	if ok, err := user.Password.Compare(request.Password); err != nil || !ok {
+		app.unauthorizedBasicErrorResponse(w, r, fmt.Errorf("invalid credentials"))
+		return
+	}
+
+	//generate the token -> add claims
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": app.config.auth.token.iss,
+	}
+	token, err := app.authenticator.GenerateToken(claims)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+	//send it to the client
+	if err := app.jsonResponse(w, http.StatusOK, token); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

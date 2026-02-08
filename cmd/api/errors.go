@@ -27,3 +27,14 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request,
 func (app *application) notContent(w http.ResponseWriter) {
 	noContentResponse(w, http.StatusNoContent)
 }
+
+func (app *application) unauthorizeErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.logger.Errorw("unauthorize error response ", "method", r.Method, "path", r.URL.Path, "error", err.Error())
+	errorResponse(w, http.StatusUnauthorized, err.Error())
+}
+
+func (app *application) unauthorizedBasicErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.logger.Errorw("unauthorize error response ", "method", r.Method, "path", r.URL.Path, "error", err.Error())
+	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+	errorResponse(w, http.StatusUnauthorized, err.Error())
+}

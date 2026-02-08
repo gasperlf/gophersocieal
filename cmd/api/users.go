@@ -45,7 +45,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 // FollowUser godoc
 //
 //	@Summary		Follow a user
-//	@Description	Follow a user by ID
+//	@Description	Follows a user by ID
 //	@Tags			users
 //	@Accept			json
 //	@Produce		json
@@ -57,21 +57,16 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@Router			/users/{userID}/follow [put]
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 
-	var request FollowUser
-	if err := readJSON(w, r, &request); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	if err := Validate.Struct(request); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
 	followerUser := getUserFromContext(r)
+	followedID, err := getParamAsInt(r, "userID")
+
+	if err != nil || followedID == 0 {
+		app.badRequestResponse(w, r, errors.New("invalid user id"))
+		return
+	}
 
 	ctx := r.Context()
-	err := app.store.Followers.Follow(ctx, followerUser.ID, request.UserID)
+	err = app.store.Followers.Follow(ctx, followerUser.ID, followedID)
 
 	if err != nil {
 
@@ -106,23 +101,17 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 //	@Router			/users/{userID}/unfollow [put]
 func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 
-	var request FollowUser
-	if err := readJSON(w, r, &request); err != nil {
-		app.badRequestResponse(w, r, err)
+	unfollowedUser := getUserFromContext(r)
+	unfollowedID, err := getParamAsInt(r, "userID")
+
+	if err != nil || unfollowedID == 0 {
+		app.badRequestResponse(w, r, errors.New("invalid user id"))
 		return
 	}
 
-	if err := Validate.Struct(request); err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	unfollowerUser := getUserFromContext(r)
 	ctx := r.Context()
 
-	err := app.store.Followers.Unfollow(ctx, unfollowerUser.ID, request.UserID)
-
-	if err != nil {
+	if err := app.store.Followers.Unfollow(ctx, unfollowedUser.ID, unfollowedID); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
