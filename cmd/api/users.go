@@ -34,7 +34,27 @@ type FollowUser struct {
 //	@Router			/users/{userID} [get]
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := getUserFromContext(r)
+	userID, err := getParamAsInt(r, "userID")
+
+	if err != nil {
+		app.badRequestResponse(w, r, errors.New("invalid user id"))
+		return
+	}
+	ctx := r.Context()
+
+	// get the user
+	user, err := app.getUser(ctx, userID)
+
+	if err != nil {
+		switch err {
+		case store.ErrorNotFound:
+			app.notFoundResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
 
 	if err := app.jsonResponse(w, http.StatusOK, user); err != nil {
 		app.internalServerError(w, r, err)

@@ -51,3 +51,11 @@ CORS:
 ```bash
 go get github.com/go-chi/cors
 ```
+
+performance test
+
+https://www.npmjs.com/package/autocannon
+
+```bash
+npx autocannon -c 100 -d 10 http://localhost:4000/api/v1/posts
+```

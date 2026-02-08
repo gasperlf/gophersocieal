@@ -14,11 +14,13 @@ import (
 	"ontopsolutions.net/gasperlf/social/internal/auth"
 	"ontopsolutions.net/gasperlf/social/internal/mailer"
 	"ontopsolutions.net/gasperlf/social/internal/store"
+	"ontopsolutions.net/gasperlf/social/internal/store/cache"
 )
 
 type application struct {
 	config        config
 	store         store.Storage
+	cacheStore    cache.Storage
 	logger        *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator auth.Authenticator
@@ -32,6 +34,14 @@ type config struct {
 	mail        mailConfig
 	frontendURL string
 	auth        authConfig
+	redisCfg    redisConfig
+}
+
+type redisConfig struct {
+	addr     string
+	password string
+	db       int
+	enabled  bool
 }
 
 type authConfig struct {

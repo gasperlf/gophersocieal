@@ -3,12 +3,14 @@ package main
 import (
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"ontopsolutions.net/gasperlf/social/internal/auth"
 	"ontopsolutions.net/gasperlf/social/internal/db"
 	"ontopsolutions.net/gasperlf/social/internal/env"
 	"ontopsolutions.net/gasperlf/social/internal/mailer"
 	"ontopsolutions.net/gasperlf/social/internal/store"
+	"ontopsolutions.net/gasperlf/social/internal/store/cache"
 )
 
 const version = "0.0.1"
@@ -42,6 +44,12 @@ func main() {
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
 			maxIdleConns: env.GetInt("DB_MAX_IDLE_CONNS", 30),
 			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
+		},
+		redisCfg: redisConfig{
+			addr:     env.GetString("REDIS_ADDR", "localhost:6379"),
+			password: env.GetString("REDIS_PASSWORD", ""),
+			db:       env.GetInt("REDIS_DB", 0),
+			enabled:  env.GetBool("REDIS_ENABLED", true),
 		},
 		env: env.GetString("APP_ENV", "development"),
 		mail: mailConfig{
@@ -82,7 +90,27 @@ func main() {
 	defer db.Close()
 	logger.Info("database connection pool established")
 
+	// Redis client initialization would go here if needed
+	var rdb *redis.Client
+	if cfg.redisCfg.enabled {
+		rdb = cache.NewRedisClient(
+			cfg.redisCfg.addr,
+			cfg.redisCfg.password,
+			cfg.redisCfg.db,
+		)
+
+		defer func() {
+			if err := rdb.Close(); err != nil {
+				logger.Error("failed to close redis client", "error", err)
+			}
+		}()
+		logger.Info("redis cache initialized")
+	}
+
+	logger.Info("redis client initialized")
+
 	store := store.NewStorage(db)
+	cacheStore := cache.NewRedisStorage(rdb)
 
 	mailer := mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 
@@ -94,6 +122,7 @@ func main() {
 		logger:        logger,
 		mailer:        mailer,
 		authenticator: jwtAuthenticator,
+		cacheStore:    cacheStore,
 	}
 
 	mux := mount(app)
