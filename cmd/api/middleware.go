@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"ontopsolutions.net/gasperlf/social/internal/store"
 )
 
 func (app *application) BasicMidleware() func(http.Handler) http.Handler {
@@ -90,4 +91,44 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 
 	})
+}
+
+func (app *application) CheckPostOwnership(roleRequired string, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// if it is the owner of the post
+		user := getUserFromContext(r)
+		post := getPostFromContext(r)
+
+		if user.ID == post.UserID {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		//role precedence check
+		allowance, err := app.checkRolePrecedence(r.Context(), user, roleRequired)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if !allowance {
+			app.forbiddenErrorResponse(w, r, fmt.Errorf("you don't have the required permissions to perform this action"))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) checkRolePrecedence(ctx context.Context, user *store.User, roleName string) (bool, error) {
+
+	// find the role of the user
+	role, err := app.store.Roles.GetByName(ctx, roleName)
+	if err != nil {
+		return false, err
+	}
+
+	// find the precedence of the role required
+	return user.Role.Level >= role.Level, nil
 }

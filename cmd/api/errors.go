@@ -9,6 +9,11 @@ func (app *application) internalServerError(w http.ResponseWriter, r *http.Reque
 	errorResponse(w, http.StatusInternalServerError, "the server encountered a problem and could not process your request")
 }
 
+func (app *application) forbiddenErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.logger.Warnw("forbidden error", "method", r.Method, "path", r.URL.Path, "error", err.Error())
+	errorResponse(w, http.StatusForbidden, "you do not have permission to access this resource")
+}
+
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.logger.Warnf("bad request", "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	errorResponse(w, http.StatusBadRequest, err.Error())

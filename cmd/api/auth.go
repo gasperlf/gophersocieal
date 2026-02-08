@@ -58,6 +58,9 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	user := &store.User{
 		Username: request.Username,
 		Email:    request.Email,
+		Role: store.Role{
+			Name: "user", // default role for new users
+		},
 	}
 
 	//hash password
