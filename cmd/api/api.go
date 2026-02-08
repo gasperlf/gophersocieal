@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -148,6 +153,7 @@ func (app *application) run(mux http.Handler) error {
 	docs.SwaggerInfo.Version = version
 	docs.SwaggerInfo.BasePath = "/v1"
 	docs.SwaggerInfo.Host = app.config.apiURL
+
 	srvr := &http.Server{
 		Addr:         app.config.addr,
 		Handler:      mux,
@@ -156,7 +162,33 @@ func (app *application) run(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
+	shutdown := make(chan error)
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		s := <-c
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		app.logger.Infow("caught shutdown signal", "signal", s.String())
+
+		shutdown <- srvr.Shutdown(ctx)
+	}()
+
 	app.logger.Infow("server has started at", "addr", app.config.addr, "env", app.config.env, "version", version)
 
-	return srvr.ListenAndServe()
+	err := srvr.ListenAndServe()
+
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

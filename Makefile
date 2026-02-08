@@ -25,3 +25,7 @@ gen-docs:
 .PHONY: run
 run: gen-docs
 	@go run cmd/api/*.go
+
+.PHONY: test
+test:
+	@go test -v ./...

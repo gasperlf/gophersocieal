@@ -59,7 +59,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		}
 
 		//parse it -> get the base 64
-		parts := strings.Split(authHeader, "")
+		parts := strings.Split(authHeader, " ")
 
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			app.unauthorizeErrorResponse(w, r, fmt.Errorf("unauthorization header is malformed"))
