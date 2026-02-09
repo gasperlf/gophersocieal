@@ -3,11 +3,23 @@ package main
 import (
 	"net/http"
 	"testing"
+	"time"
+
+	"ontopsolutions.net/gasperlf/social/internal/ratelimiter"
 )
 
 func TestGetUser(t *testing.T) {
 
-	app := newTestApplication(t)
+	cfg := config{
+		rateLimiter: ratelimiter.Config{
+			RequestsPerTimeFrame: 20,
+			TimeFrame:            time.Second * 5,
+			Enabled:              true,
+		},
+		addr: ":8080",
+	}
+
+	app := newTestApplication(t, cfg)
 	mux := mount(app)
 	testToken, _ := app.authenticator.GenerateToken(nil)
 

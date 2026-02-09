@@ -7,23 +7,30 @@ import (
 
 	"go.uber.org/zap"
 	"ontopsolutions.net/gasperlf/social/internal/auth"
+	"ontopsolutions.net/gasperlf/social/internal/ratelimiter"
 	"ontopsolutions.net/gasperlf/social/internal/store"
 	"ontopsolutions.net/gasperlf/social/internal/store/cache"
 )
 
-func newTestApplication(t *testing.T) *application {
+func newTestApplication(t *testing.T, cfg config) *application {
 	t.Helper()
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
 	mockStore := store.NewMockStore()
 	mockCacheUser := cache.NewMockCache()
 	testAuth := &auth.TestAuthenticator{}
+	rateLimiter := ratelimiter.NewFixedWindowRateLimiter(
+		cfg.rateLimiter.RequestsPerTimeFrame,
+		cfg.rateLimiter.TimeFrame,
+	)
 
 	return &application{
+		config:        cfg,
 		logger:        logger,
 		store:         mockStore,
 		cacheStore:    mockCacheUser,
 		authenticator: testAuth,
+		rateLimiter:   rateLimiter,
 	}
 }
 

@@ -18,6 +18,7 @@ import (
 	"ontopsolutions.net/gasperlf/social/docs"
 	"ontopsolutions.net/gasperlf/social/internal/auth"
 	"ontopsolutions.net/gasperlf/social/internal/mailer"
+	"ontopsolutions.net/gasperlf/social/internal/ratelimiter"
 	"ontopsolutions.net/gasperlf/social/internal/store"
 	"ontopsolutions.net/gasperlf/social/internal/store/cache"
 )
@@ -29,6 +30,7 @@ type application struct {
 	logger        *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator auth.Authenticator
+	rateLimiter   ratelimiter.Limiter
 }
 
 type config struct {
@@ -40,6 +42,7 @@ type config struct {
 	frontendURL string
 	auth        authConfig
 	redisCfg    redisConfig
+	rateLimiter ratelimiter.Config
 }
 
 type redisConfig struct {
@@ -103,6 +106,7 @@ func mount(app *application) http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(app.RateLimiterMiddleware)
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further

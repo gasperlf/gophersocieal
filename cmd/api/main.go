@@ -9,6 +9,7 @@ import (
 	"ontopsolutions.net/gasperlf/social/internal/db"
 	"ontopsolutions.net/gasperlf/social/internal/env"
 	"ontopsolutions.net/gasperlf/social/internal/mailer"
+	"ontopsolutions.net/gasperlf/social/internal/ratelimiter"
 	"ontopsolutions.net/gasperlf/social/internal/store"
 	"ontopsolutions.net/gasperlf/social/internal/store/cache"
 )
@@ -73,6 +74,11 @@ func main() {
 				iss:    "gophersocial",
 			},
 		},
+		rateLimiter: ratelimiter.Config{
+			RequestsPerTimeFrame: env.GetInt("RATE_LIMIT_REQUESTS_PER_TIME_FRAME", 20),
+			TimeFrame:            time.Second * 5,
+			Enabled:              env.GetBool("RATE_LIMIT_ENABLED", true),
+		},
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
@@ -106,8 +112,13 @@ func main() {
 		}()
 		logger.Info("redis cache initialized")
 	}
-
 	logger.Info("redis client initialized")
+
+	// rate limiter initialization would go here if needed
+	ratelimiter := ratelimiter.NewFixedWindowRateLimiter(
+		cfg.rateLimiter.RequestsPerTimeFrame,
+		cfg.rateLimiter.TimeFrame,
+	)
 
 	store := store.NewStorage(db)
 	cacheStore := cache.NewRedisStorage(rdb)
@@ -123,6 +134,7 @@ func main() {
 		mailer:        mailer,
 		authenticator: jwtAuthenticator,
 		cacheStore:    cacheStore,
+		rateLimiter:   ratelimiter,
 	}
 
 	mux := mount(app)
