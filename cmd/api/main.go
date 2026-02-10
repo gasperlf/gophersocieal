@@ -14,7 +14,7 @@ import (
 	"ontopsolutions.net/gasperlf/social/internal/store/cache"
 )
 
-const version = "0.0.1"
+const version = ""
 
 //	@title			GopherSocial API
 //	@version		0.0.1
