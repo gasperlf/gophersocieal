@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/gasperlf/gophersocieal/compare/v1.0.0...v1.1.0) (2026-02-10)
+
+
+### Features
+
+* update API version automatically ([b53888b](https://github.com/gasperlf/gophersocieal/commit/b53888b6fa81f8326f267228c823d301b791d0d4))
+
 ## 1.0.0 (2026-02-10)
 
 
