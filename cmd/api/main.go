@@ -82,7 +82,11 @@ func main() {
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
-	defer logger.Sync()
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			logger.Error("failed to sync logger", "error", err)
+		}
+	}()
 
 	db, err := db.New(
 		cfg.db.addr,
