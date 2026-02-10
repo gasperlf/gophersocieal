@@ -45,7 +45,11 @@ func Seed(store store.Storage, db *sql.DB) {
 			return
 		}
 	}
-	tx.Commit()
+	err := tx.Commit()
+	if err != nil {
+		log.Panicln("failed to commit transaction", err)
+		return
+	}
 
 	posts := generatePosts(users, 500)
 
